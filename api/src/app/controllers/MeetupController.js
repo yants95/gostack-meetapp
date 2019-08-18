@@ -1,9 +1,12 @@
-import * as Yup from 'yup';
 import { Op } from 'sequelize';
-import { isBefore, startOfDay, endOfDay, parseISO } from 'date-fns';
-import Meetup from '../models/Meetup';
+import { startOfDay, endOfDay, parseISO } from 'date-fns';
 import User from '../models/User';
 import File from '../models/File';
+import Meetup from '../models/Meetup';
+
+import CreateMeetupService from '../services/CreateMeetupService';
+import UpdateMeetupService from '../services/UpdateMeetupService';
+import DeleteMeetupService from '../services/DeleteMeetupService';
 
 class MeetupController {
     async index(req, res) {
@@ -50,92 +53,52 @@ class MeetupController {
     }
 
     async store(req, res) {
-        const schema = Yup.object().shape({
-            title: Yup.string().required(),
-            file_id: Yup.number().required(),
-            description: Yup.string().required(),
-            location: Yup.string().required(),
-            date: Yup.date().required(),
-        });
-
-        if (!(await schema.isValid(req.body))) {
-            return res.status(400).json({ error: 'Validation fails' });
-        }
-
-        const { title, description, location, date, file_id } = req.body;
-
-        if (isBefore(parseISO(date), new Date())) {
-            return res
-                .status(400)
-                .json({ error: "You can't register a past date" });
-        }
-
-        const meetup = await Meetup.create({
+        const {
             title,
+            file_id,
+            user_id,
             description,
             location,
             date,
+        } = req.body;
+
+        const meetup = await CreateMeetupService.run({
+            title,
             file_id,
-            user_id: req.userId,
+            user_id,
+            description,
+            location,
+            date,
         });
 
         return res.json(meetup);
     }
 
     async update(req, res) {
-        const schema = Yup.object().shape({
-            title: Yup.string(),
-            file_id: Yup.number(),
-            description: Yup.string(),
-            location: Yup.string(),
-            date: Yup.date(),
+        const { title, file_id, description, location, date } = req.body;
+
+        const meetup = await UpdateMeetupService.run({
+            title,
+            file_id,
+            meetup_id: req.params.id,
+            user_id: req.userId,
+            description,
+            location,
+            date,
         });
-
-        if (!(await schema.isValid(req.body))) {
-            return res.status(400).json({ error: 'Validation fails' });
-        }
-
-        const meetup = await Meetup.findByPk(req.params.id);
-
-        if (meetup.user_id !== req.userId) {
-            return res.status(401).json({ error: 'Not authorized.' });
-        }
-
-        if (isBefore(parseISO(req.body.date), new Date())) {
-            return res.status(400).json({ error: 'Meetup date invalid' });
-        }
-
-        if (meetup.past) {
-            return res
-                .status(400)
-                .json({ error: "Can't update past meetups." });
-        }
-
-        await meetup.update(req.body);
 
         return res.json(meetup);
     }
 
     async delete(req, res) {
-        const meetup = await Meetup.findByPk(req.params.id);
+        await DeleteMeetupService.run({
+            meetup_id: req.params.id,
+            user_id: req.userId,
+        });
 
-        if (!meetup) {
-            return res.status(404).json({ error: 'Not found.' });
-        }
-
-        if (meetup.user_id !== req.userId) {
-            return res.status(401).json({ error: 'Not authorized.' });
-        }
-
-        if (meetup.past) {
-            return res
-                .status(400)
-                .json({ error: "Can't delete past meetups." });
-        }
-
-        await meetup.destroy();
-
-        return res.send();
+        return res
+            .status(200)
+            .json({ message: 'Meetup deleted successfully.' });
     }
 }
 
