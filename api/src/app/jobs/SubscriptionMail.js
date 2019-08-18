@@ -6,15 +6,15 @@ class SubscriptionMail {
     }
 
     async handle({ data }) {
-        const { meetup, user } = data;
+        const { Meetup, user } = data;
 
         await Mail.sendMail({
-            to: `${meetup.User.name} <${meetup.User.email}>`,
-            subject: `[${meetup.title}] Nova inscrição`,
+            to: `${Meetup.User.name} <${Meetup.User.email}>`,
+            subject: `[${Meetup.title}] Nova inscrição`,
             template: 'subscription',
             context: {
-                organizer: meetup.User.name,
-                meetup: meetup.title,
+                organizer: Meetup.User.name,
+                Meetup: Meetup.title,
                 user: user.name,
                 email: user.email,
             },
