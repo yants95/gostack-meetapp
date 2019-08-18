@@ -48,7 +48,7 @@ export const Container = styled.div`
             align-self: flex-end;
             margin: 5px 0 0;
             height: 42px;
-            width: 162px;
+            width: 100px;
             background: #4d9936;
             color: #fff;
             border: 0;
