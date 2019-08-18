@@ -53,19 +53,12 @@ class MeetupController {
     }
 
     async store(req, res) {
-        const {
-            title,
-            file_id,
-            user_id,
-            description,
-            location,
-            date,
-        } = req.body;
+        const { title, file_id, description, location, date } = req.body;
 
         const meetup = await CreateMeetupService.run({
             title,
             file_id,
-            user_id,
+            user_id: req.userId,
             description,
             location,
             date,
